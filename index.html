@@ -229,13 +229,21 @@
         </div>
     </div>
 
-    <!-- SCRIPTS LIGAÇÃO FIREBASE -->
+    <!-- SCRIPTS LIGAÇÃO FIREBASE DIRETA -->
     <script type="module">
-        // Importa a chave do mesmo ficheiro protegido do PWA
-        import { firebaseConfig } from './firebase-config.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
         import { getFirestore, collection, query, getDocs, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+        // Configuração direta da API do Firebase no script
+        const firebaseConfig = {
+            apiKey: "AIzaSyAMDeRB1ZOOP919gcbcOoFgAsy6dNy7zS8",
+            authDomain: "banco-de-dados-monitor.firebaseapp.com",
+            projectId: "banco-de-dados-monitor",
+            storageBucket: "banco-de-dados-monitor.firebasestorage.app",
+            messagingSenderId: "248039911306",
+            appId: "1:248039911306:web:188ffff179b3ffb3ace273"
+        };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
