@@ -37,6 +37,8 @@
         .btn-primary { background-color: var(--color-red); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; width: 100%; transition: opacity 0.2s; }
         .btn-primary:hover { opacity: 0.9; }
         .btn-small { background-color: var(--color-dark); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+        .btn-delete { background-color: #FFEBEE; color: #D32F2F; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; margin-left: 5px; }
+        .btn-delete:hover { background-color: #FFCDD2; }
         
         /* Filtros Inteligentes de Tabela */
         .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; }
@@ -123,10 +125,11 @@
                                 <th>Responsável</th>
                                 <th>Motivo</th>
                                 <th>Status</th>
+                                <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="tabela-agenda">
-                            <tr><td colspan="5">A carregar agenda...</td></tr>
+                            <tr><td colspan="6">A carregar agenda...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -178,10 +181,11 @@
                         <th>Cidade / UF</th>
                         <th>Endereço Completo</th>
                         <th>Status</th>
+                        <th>Ações</th>
                     </tr>
                 </thead>
                 <tbody id="tabela-clientes">
-                    <tr><td colspan="4">A carregar clientes...</td></tr>
+                    <tr><td colspan="5">A carregar clientes...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -244,6 +248,34 @@
         </div>
     </div>
 
+    <!-- MODAL: EDITAR CLIENTE -->
+    <div id="modal-editar-cliente" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Loja / Cliente</h3>
+                <button class="btn-close" onclick="fecharModalEditarCliente()">×</button>
+            </div>
+            <input type="hidden" id="edit-cli-id">
+            <div class="form-group">
+                <label>Nome Fantasia</label>
+                <input type="text" id="edit-cli-nome" required>
+            </div>
+            <div class="form-group">
+                <label>Cidade</label>
+                <input type="text" id="edit-cli-cidade" required>
+            </div>
+            <div class="form-group">
+                <label>UF</label>
+                <input type="text" id="edit-cli-uf" maxlength="2" required style="text-transform: uppercase;">
+            </div>
+            <div class="form-group">
+                <label>Endereço Completo</label>
+                <input type="text" id="edit-cli-endereco" required>
+            </div>
+            <button class="btn-primary" id="btn-atualizar-cliente" style="margin-top: 15px;">Salvar Alterações</button>
+        </div>
+    </div>
+
     <!-- MODAL: CADASTRAR NOVO USUÁRIO -->
     <div id="modal-usuario" class="modal-overlay">
         <div class="modal-content">
@@ -285,7 +317,7 @@
     <div id="modal-editar" class="modal-overlay">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Editar Usuário</h3>
+                <h3>Editar Membro da Equipe</h3>
                 <button class="btn-close" onclick="fecharModalEdit()">×</button>
             </div>
             <input type="hidden" id="edit-id">
@@ -317,7 +349,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-        import { getFirestore, collection, query, getDocs, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+        import { getFirestore, collection, query, getDocs, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAMDeRB1ZOOP919gcbcOoFgAsy6dNy7zS8",
@@ -335,6 +367,7 @@
         let mapaClientes = {};
         let mapaEquipe = {};
         let listaGeralVisitas = [];
+        let listaGeralClientes = [];
         let listaGeralUsuarios = [];
 
         onAuthStateChanged(auth, (user) => {
@@ -400,7 +433,7 @@
 
         window.carregarAgendaGeral = async function() {
             const tbody = document.getElementById('tabela-agenda');
-            tbody.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6">A carregar...</td></tr>';
             try {
                 if(Object.keys(mapaClientes).length === 0) await carregarDropdownsVisita();
 
@@ -410,7 +443,7 @@
                 listaGeralVisitas.sort((a,b) => (b.data.toDate ? b.data.toDate() : new Date(b.data)) - (a.data.toDate ? a.data.toDate() : new Date(a.data)));
                 
                 renderizarTabelaAgenda(listaGeralVisitas);
-            } catch (error) { tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar.</td></tr>'; }
+            } catch (error) { tbody.innerHTML = '<tr><td colspan="6">Erro ao carregar.</td></tr>'; }
         };
 
         function renderizarTabelaAgenda(visitas) {
@@ -427,10 +460,11 @@
                         <td>${nomeTec}</td>
                         <td>${v.objetivo || '-'}</td>
                         <td><span class="status-badge ${classStatus}">${v.status}</span></td>
+                        <td><button class="btn-delete" onclick="deletarVisita('${v.id}')">Excluir</button></td>
                     </tr>
                 `;
             });
-            tbody.innerHTML = html || '<tr><td colspan="5">Nenhuma visita encontrada.</td></tr>';
+            tbody.innerHTML = html || '<tr><td colspan="6">Nenhuma visita encontrada.</td></tr>';
         }
 
         window.filtrarAgenda = function() {
@@ -468,22 +502,44 @@
             } catch (err) { alert("Erro ao agendar."); } finally { btn.disabled = false; btn.textContent = "Atribuir Visita"; }
         });
 
+        window.deletarVisita = async function(id) {
+            if(confirm("Deseja realmente excluir esta visita agendada?")) {
+                try {
+                    await deleteDoc(doc(db, "atividades", id));
+                    alert("Visita excluída com sucesso!");
+                    carregarAgendaGeral();
+                } catch(e) { alert("Erro ao excluir visita."); }
+            }
+        };
+
         // GESTÃO DE CLIENTES & MODAL
         window.abrirModalCliente = () => document.getElementById('modal-cliente').style.display = 'flex';
         window.fecharModalCliente = () => document.getElementById('modal-cliente').style.display = 'none';
 
         window.carregarClientesPainel = async function() {
             const tbody = document.getElementById('tabela-clientes');
-            tbody.innerHTML = '<tr><td colspan="4">A carregar...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
             try {
                 const snap = await getDocs(collection(db, "clientes"));
+                listaGeralClientes = [];
+                snap.forEach(d => { let c = d.data(); c.id = d.id; listaGeralClientes.push(c); });
+
                 let html = '';
-                snap.forEach(d => {
-                    const c = d.data();
-                    html += `<tr><td><strong>${c.nome}</strong></td><td>${c.cidade || ''} / ${c.uf || ''}</td><td>${c.enderecoCompleto || '-'}</td><td><span class="status-badge">Ativo</span></td></tr>`;
+                listaGeralClientes.forEach((c, index) => {
+                    html += `
+                        <tr>
+                            <td><strong>${c.nome}</strong></td>
+                            <td>${c.cidade || ''} / ${c.uf || ''}</td>
+                            <td>${c.enderecoCompleto || '-'}</td>
+                            <td><span class="status-badge">Ativo</span></td>
+                            <td>
+                                <button class="btn-small" onclick="abrirEditarCliente(${index})">Editar</button>
+                                <button class="btn-delete" onclick="deletarCliente('${c.id}')">Excluir</button>
+                            </td>
+                        </tr>`;
                 });
-                tbody.innerHTML = html || '<tr><td colspan="4">Nenhum cliente registado.</td></tr>';
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="4">Erro ao carregar.</td></tr>'; }
+                tbody.innerHTML = html || '<tr><td colspan="5">Nenhum cliente registado.</td></tr>';
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar.</td></tr>'; }
         };
 
         document.getElementById('form-cliente-modal').addEventListener('submit', async (e) => {
@@ -506,6 +562,45 @@
                 carregarDropdownsVisita();
             } catch(err) { alert("Erro ao salvar loja."); } finally { btn.disabled = false; btn.textContent = "Salvar Loja"; }
         });
+
+        window.abrirEditarCliente = function(index) {
+            const c = listaGeralClientes[index];
+            document.getElementById('edit-cli-id').value = c.id;
+            document.getElementById('edit-cli-nome').value = c.nome || "";
+            document.getElementById('edit-cli-cidade').value = c.cidade || "";
+            document.getElementById('edit-cli-uf').value = c.uf || "";
+            document.getElementById('edit-cli-endereco').value = c.enderecoCompleto || "";
+            document.getElementById('modal-editar-cliente').style.display = 'flex';
+        };
+
+        window.fecharModalEditarCliente = () => document.getElementById('modal-editar-cliente').style.display = 'none';
+
+        document.getElementById('btn-atualizar-cliente').addEventListener('click', async () => {
+            try {
+                await updateDoc(doc(db, "clientes", document.getElementById('edit-cli-id').value), {
+                    nome: document.getElementById('edit-cli-nome').value,
+                    cidade: document.getElementById('edit-cli-cidade').value,
+                    uf: document.getElementById('edit-cli-uf').value.toUpperCase(),
+                    enderecoCompleto: document.getElementById('edit-cli-endereco').value,
+                    atualizadoEm: new Date()
+                });
+                alert("Cliente atualizado com sucesso!");
+                fecharModalEditarCliente();
+                carregarClientesPainel();
+                carregarDropdownsVisita();
+            } catch(e) { alert("Erro ao atualizar cliente."); }
+        });
+
+        window.deletarCliente = async function(id) {
+            if(confirm("Tem certeza que deseja excluir este cliente?")) {
+                try {
+                    await deleteDoc(doc(db, "clientes", id));
+                    alert("Cliente excluído com sucesso!");
+                    carregarClientesPainel();
+                    carregarDropdownsVisita();
+                } catch(e) { alert("Erro ao excluir cliente."); }
+            }
+        };
 
         // GESTÃO DE USUÁRIOS & MODAL
         window.abrirModalUsuario = () => document.getElementById('modal-usuario').style.display = 'flex';
@@ -534,7 +629,10 @@
                             <td>${u.perfil}</td>
                             <td>${u.regiao || '-'}</td>
                             <td><span class="status-badge ${statusClass}">${statusTxt}</span></td>
-                            <td><button class="btn-small" onclick="abrirEdicao(${index})">Editar</button></td>
+                            <td>
+                                <button class="btn-small" onclick="abrirEdicao(${index})">Editar</button>
+                                <button class="btn-delete" onclick="deletarUsuario('${u.col}', '${u.id}')">Excluir</button>
+                            </td>
                         </tr>
                     `;
                 });
@@ -594,6 +692,16 @@
                 carregarUsuarios();
             } catch(e) { alert("Erro ao atualizar."); }
         });
+
+        window.deletarUsuario = async function(colecao, id) {
+            if(confirm("Deseja realmente excluir este membro do banco de dados?")) {
+                try {
+                    await deleteDoc(doc(db, colecao, id));
+                    alert("Membro excluído com sucesso!");
+                    carregarUsuarios();
+                } catch(e) { alert("Erro ao excluir membro."); }
+            }
+        };
 
         carregarDropdownsVisita();
     </script>
