@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Advance Tintas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --color-dark: #040438; --color-red: #F51E30; --color-bg: #F4F5F7; --color-white: #FFFFFF; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
+        body { background-color: var(--color-bg); color: var(--color-dark); display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar */
+        .sidebar { width: 260px; background-color: var(--color-white); border-right: 1px solid #EAEAEA; display: flex; flex-direction: column; }
+        .logo { padding: 25px 20px; font-size: 1.5rem; font-weight: 900; color: var(--color-dark); border-bottom: 1px solid #EAEAEA; }
+        .logo span { color: var(--color-red); font-size: 0.7rem; display: block; margin-top: -5px; }
+        .menu-item { padding: 16px 20px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #F9F9F9; transition: background 0.2s; }
+        .menu-item:hover, .menu-item.active { background-color: #FEECEE; color: var(--color-red); border-right: 4px solid var(--color-red); font-weight: 600; }
+        
+        /* Main Content */
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
+        .section { display: none; background: var(--color-white); border-radius: 12px; padding: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+        .section.active { display: block; }
+        .section-title { font-size: 1.6rem; font-weight: 700; margin-bottom: 25px; border-bottom: 2px solid #F0F0F0; padding-bottom: 10px; }
+        
+        /* Forms */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group.full-width { grid-column: 1 / -1; }
+        label { display: block; font-size: 0.9rem; font-weight: 600; margin-bottom: 6px; color: #555; }
+        input, select, textarea { width: 100%; padding: 12px 15px; border: 1px solid #DDD; border-radius: 8px; outline: none; font-size: 0.95rem; }
+        input:focus, select:focus, textarea:focus { border-color: var(--color-red); }
+        .btn-primary { background-color: var(--color-red); color: white; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-small { background-color: var(--color-dark); color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #EEE; }
+        th { background-color: #F9F9FB; font-weight: 600; color: #666; font-size: 0.9rem; }
+        td { font-size: 0.95rem; }
+        .status-badge { background-color: #E8F5E9; color: #2E7D32; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+        .status-pendente { background-color: #FFF3E0; color: #EF6C00; }
+        
+        /* Modal Edição & Login */
+        #modal-editar { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: white; padding: 30px; border-radius: 12px; width: 400px; }
+
+        #tela-login-admin { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--color-bg); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+        .login-box { background: white; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN ADMIN -->
+    <div id="tela-login-admin">
+        <div class="login-box">
+            <div class="logo" style="border: none; padding: 0; margin-bottom: 30px; text-align: center;">ADVANCE<span>TINTAS | ADMIN</span></div>
+            <form id="form-login-admin">
+                <div class="form-group">
+                    <label>E-mail Corporativo</label>
+                    <input type="email" id="admin-email" required>
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="admin-senha" required>
+                </div>
+                <button type="submit" class="btn-primary" id="btn-login-admin" style="width: 100%;">Acessar Painel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- O PAINEL FICA ESCONDIDO ATÉ FAZER LOGIN -->
+    <div class="sidebar" id="sidebar-admin" style="display: none;">
+        <div class="logo">ADVANCE<span>TINTAS | ADMIN</span></div>
+        <div class="menu-item active" onclick="mostrarSecao('sec-agenda', this)">Agenda Geral</div>
+        <div class="menu-item" onclick="mostrarSecao('sec-nova-visita', this)">Delegar Nova Visita</div>
+        <div class="menu-item" onclick="mostrarSecao('sec-usuarios', this)">Gerenciar Usuários</div>
+        <div class="menu-item" onclick="mostrarSecao('sec-novo-usuario', this)">Cadastrar Usuário</div>
+        <div class="menu-item" id="btn-logout" style="color: #888; margin-top: auto;">Sair do Painel</div>
+    </div>
+
+    <div class="main-content" id="main-admin" style="display: none;">
+        
+        <!-- SECÇÃO 1: AGENDA GERAL -->
+        <div id="sec-agenda" class="section active">
+            <h2 class="section-title">Agenda Geral de Visitas</h2>
+            <button class="btn-small" onclick="carregarAgendaGeral()" style="margin-bottom: 15px;">Atualizar Lista</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Cliente</th>
+                        <th>Responsável (Técnico)</th>
+                        <th>Motivo</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-agenda">
+                    <tr><td colspan="5">A carregar dados...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECÇÃO 2: DELEGAR NOVA VISITA -->
+        <div id="sec-nova-visita" class="section">
+            <h2 class="section-title">Delegar Visita a Técnico</h2>
+            <form id="form-visita" class="form-grid">
+                <div class="form-group full-width">
+                    <label>Cliente da Base de Dados</label>
+                    <select id="v-cliente" required><option value="">Carregando...</option></select>
+                </div>
+                <div class="form-group">
+                    <label>Data</label>
+                    <input type="date" id="v-data" required>
+                </div>
+                <div class="form-group">
+                    <label>Horário</label>
+                    <input type="time" id="v-hora" required>
+                </div>
+                <div class="form-group full-width">
+                    <label>Técnico / Promotor Responsável</label>
+                    <select id="v-responsavel" required><option value="">Carregando...</option></select>
+                </div>
+                <div class="form-group full-width">
+                    <label>Motivo da Visita</label>
+                    <input type="text" id="v-motivo" placeholder="Ex: Demonstração de Produto, Suporte" required>
+                </div>
+                <div class="form-group full-width">
+                    <label>Nota / Instruções Internas</label>
+                    <textarea id="v-nota" rows="3" placeholder="Instruções para o técnico..."></textarea>
+                </div>
+                <div class="form-group full-width">
+                    <button type="submit" class="btn-primary" id="btn-salvar-visita">Agendar Visita</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- SECÇÃO 3: GERENCIAR USUÁRIOS -->
+        <div id="sec-usuarios" class="section">
+            <h2 class="section-title">Usuários Cadastrados</h2>
+            <button class="btn-small" onclick="carregarUsuarios()" style="margin-bottom: 15px;">Atualizar Lista</button>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>E-mail</th>
+                        <th>Perfil (Coleção)</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="tabela-usuarios">
+                    <tr><td colspan="5">A carregar dados...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- SECÇÃO 4: CADASTRAR NOVO USUÁRIO -->
+        <div id="sec-novo-usuario" class="section">
+            <h2 class="section-title">Cadastrar Novo Membro</h2>
+            <p style="margin-bottom: 20px; font-size: 0.9rem; color: #666;">
+                <strong>Nota:</strong> Lembre-se de ir ao Firebase Authentication criar a conta com o mesmo e-mail para o utilizador conseguir fazer login.
+            </p>
+            <form id="form-usuario" class="form-grid">
+                <div class="form-group">
+                    <label>Nome Completo</label>
+                    <input type="text" id="u-nome" required>
+                </div>
+                <div class="form-group">
+                    <label>E-mail (Igual ao Firebase Auth)</label>
+                    <input type="email" id="u-email" required>
+                </div>
+                <div class="form-group">
+                    <label>Perfil do Sistema</label>
+                    <select id="u-perfil" required>
+                        <option value="promotores">Promotor Técnico</option>
+                        <option value="assistencia">Assistente Técnico</option>
+                        <option value="administradores">Administrador</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Região de Atuação</label>
+                    <input type="text" id="u-regiao" placeholder="Ex: Sudeste">
+                </div>
+                <div class="form-group">
+                    <label>Telefone</label>
+                    <input type="text" id="u-telefone" placeholder="(19) 90000-0000">
+                </div>
+                <div class="form-group full-width">
+                    <button type="submit" class="btn-primary" id="btn-salvar-usuario">Cadastrar Usuário</button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- MODAL DE EDIÇÃO DE USUÁRIO -->
+    <div id="modal-editar">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 20px; color: var(--color-dark);">Editar Usuário</h3>
+            <input type="hidden" id="edit-id">
+            <input type="hidden" id="edit-colecao">
+            
+            <div class="form-group">
+                <label>Nome</label>
+                <input type="text" id="edit-nome">
+            </div>
+            <div class="form-group">
+                <label>Telefone</label>
+                <input type="text" id="edit-telefone">
+            </div>
+            <div class="form-group">
+                <label>Região</label>
+                <input type="text" id="edit-regiao">
+            </div>
+            <div class="form-group">
+                <label>Status</label>
+                <select id="edit-ativo">
+                    <option value="true">Ativo (Permitir acesso)</option>
+                    <option value="false">Inativo (Bloqueado)</option>
+                </select>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                <button class="btn-small" style="background-color: #888;" onclick="fecharModalEdit()">Cancelar</button>
+                <button class="btn-primary" style="margin-top: 0;" id="btn-atualizar-user">Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS LIGAÇÃO FIREBASE -->
+    <script type="module">
+        // ATENÇÃO: Importamos as credenciais do seu novo ficheiro secreto
+        import { firebaseConfig } from './firebase-config.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+        import { getFirestore, collection, query, getDocs, doc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // AUTENTICAÇÃO
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                document.getElementById('tela-login-admin').style.display = 'none';
+                document.getElementById('sidebar-admin').style.display = 'flex';
+                document.getElementById('main-admin').style.display = 'block';
+                carregarAgendaGeral(); // Arranca os dados de forma segura
+            } else {
+                document.getElementById('tela-login-admin').style.display = 'flex';
+                document.getElementById('sidebar-admin').style.display = 'none';
+                document.getElementById('main-admin').style.display = 'none';
+            }
+        });
+
+        document.getElementById('form-login-admin').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login-admin');
+            btn.textContent = "A carregar...";
+            try {
+                await signInWithEmailAndPassword(auth, document.getElementById('admin-email').value, document.getElementById('admin-senha').value);
+            } catch (err) {
+                alert("Falha no login. Verifique o e-mail e senha.");
+            } finally {
+                btn.textContent = "Acessar Painel";
+            }
+        });
+
+        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+
+        // LÓGICA DO PAINEL ADMIN
+        let mapaClientes = {};
+        let mapaEquipe = {};
+        let listaGeralUsuarios = [];
+
+        window.mostrarSecao = function(idSecao, el) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(idSecao).classList.add('active');
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            el.classList.add('active');
+
+            if(idSecao === 'sec-agenda') carregarAgendaGeral();
+            if(idSecao === 'sec-usuarios') carregarUsuarios();
+            if(idSecao === 'sec-nova-visita') carregarDropdownsVisita();
+        };
+
+        function fDataHora(dataFb) {
+            if(!dataFb) return "--/--/-- --:--";
+            const d = dataFb.toDate ? dataFb.toDate() : new Date(dataFb);
+            return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        }
+
+        async function carregarDropdownsVisita() {
+            try {
+                const snapClientes = await getDocs(collection(db, "clientes"));
+                const selC = document.getElementById('v-cliente');
+                selC.innerHTML = '<option value="">Selecione um cliente...</option>';
+                snapClientes.forEach(d => {
+                    selC.innerHTML += `<option value="${d.id}">${d.data().nome} - ${d.data().cidade || ''}</option>`;
+                    mapaClientes[d.id] = d.data().nome;
+                });
+
+                const selE = document.getElementById('v-responsavel');
+                selE.innerHTML = '<option value="">Selecione um técnico...</option>';
+                
+                const sProm = await getDocs(collection(db, "promotores"));
+                sProm.forEach(d => {
+                    if(d.data().ativo) { selE.innerHTML += `<option value="${d.id}">[Promotor] ${d.data().nome}</option>`; mapaEquipe[d.id] = d.data().nome; }
+                });
+
+                const sAst = await getDocs(collection(db, "assistencia"));
+                sAst.forEach(d => {
+                    if(d.data().ativo) { selE.innerHTML += `<option value="${d.id}">[Assistente] ${d.data().nome}</option>`; mapaEquipe[d.id] = d.data().nome; }
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        document.getElementById('form-visita').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-salvar-visita');
+            btn.disabled = true; btn.textContent = "A gravar...";
+
+            const idTecnico = document.getElementById('v-responsavel').value;
+            const dataCompleta = new Date(`${document.getElementById('v-data').value}T${document.getElementById('v-hora').value}:00`);
+
+            try {
+                const atvId = "atv_" + Date.now();
+                await setDoc(doc(db, "atividades", atvId), {
+                    clienteId: document.getElementById('v-cliente').value,
+                    ptvId: idTecnico,
+                    data: dataCompleta,
+                    objetivo: document.getElementById('v-motivo').value,
+                    nota: document.getElementById('v-nota').value,
+                    status: "Pendente",
+                    tipo: "Visita",
+                    criadoEm: new Date(),
+                    atualizadoEm: new Date()
+                });
+                alert("Visita delegada com sucesso!");
+                document.getElementById('form-visita').reset();
+            } catch (error) {
+                console.error(error); alert("Erro ao agendar visita.");
+            } finally { btn.disabled = false; btn.textContent = "Agendar Visita"; }
+        });
+
+        window.carregarAgendaGeral = async function() {
+            const tbody = document.getElementById('tabela-agenda');
+            tbody.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
+            try {
+                if(Object.keys(mapaClientes).length === 0) await carregarDropdownsVisita();
+
+                const snap = await getDocs(collection(db, "atividades"));
+                let html = '';
+                let visitas = [];
+                snap.forEach(d => { let v = d.data(); v.id = d.id; visitas.push(v); });
+
+                visitas.sort((a,b) => (b.data.toDate ? b.data.toDate() : new Date(b.data)) - (a.data.toDate ? a.data.toDate() : new Date(a.data)));
+
+                visitas.forEach(v => {
+                    const nomeCli = mapaClientes[v.clienteId] || 'Desconhecido';
+                    const nomeTec = mapaEquipe[v.ptvId] || 'Técnico Excluído';
+                    const classStatus = v.status === 'Pendente' ? 'status-pendente' : '';
+                    html += `
+                        <tr>
+                            <td>${fDataHora(v.data)}</td>
+                            <td><strong>${nomeCli}</strong></td>
+                            <td>${nomeTec}</td>
+                            <td>${v.objetivo || '-'}</td>
+                            <td><span class="status-badge ${classStatus}">${v.status}</span></td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html || '<tr><td colspan="5">Nenhuma visita registada.</td></tr>';
+            } catch (error) { console.error(error); tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar.</td></tr>'; }
+        };
+
+        document.getElementById('form-usuario').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btn-salvar-usuario');
+            btn.disabled = true; btn.textContent = "A gravar...";
+
+            const colecaoDestino = document.getElementById('u-perfil').value;
+            let prefixo = "usr_";
+            if (colecaoDestino === 'promotores') prefixo = "ptv_";
+            if (colecaoDestino === 'assistencia') prefixo = "ast_";
+            if (colecaoDestino === 'administradores') prefixo = "adm_";
+
+            let labelPerfil = "Administrador";
+            if (colecaoDestino === 'promotores') labelPerfil = "Promotor Técnico";
+            if (colecaoDestino === 'assistencia') labelPerfil = "Assistente Técnico";
+
+            try {
+                const novoId = prefixo + Date.now();
+                await setDoc(doc(db, colecaoDestino, novoId), {
+                    nome: document.getElementById('u-nome').value,
+                    email: document.getElementById('u-email').value,
+                    perfil: labelPerfil,
+                    regiao: document.getElementById('u-regiao').value,
+                    telefone: document.getElementById('u-telefone').value,
+                    ativo: true,
+                    criadoEm: new Date(),
+                    atualizadoEm: new Date()
+                });
+                alert("Usuário adicionado ao banco de dados!\nLembre-se de ir ao Firebase Authentication criar a conta com a respetiva senha.");
+                document.getElementById('form-usuario').reset();
+            } catch (error) {
+                console.error(error); alert("Erro ao criar utilizador.");
+            } finally { btn.disabled = false; btn.textContent = "Cadastrar Usuário"; }
+        });
+
+        window.carregarUsuarios = async function() {
+            const tbody = document.getElementById('tabela-usuarios');
+            tbody.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
+            listaGeralUsuarios = [];
+
+            try {
+                const colPromotores = await getDocs(collection(db, "promotores"));
+                colPromotores.forEach(d => listaGeralUsuarios.push({ ...d.data(), id: d.id, col: "promotores" }));
+
+                const colAssistentes = await getDocs(collection(db, "assistencia"));
+                colAssistentes.forEach(d => listaGeralUsuarios.push({ ...d.data(), id: d.id, col: "assistencia" }));
+
+                const colAdmin = await getDocs(collection(db, "administradores"));
+                colAdmin.forEach(d => listaGeralUsuarios.push({ ...d.data(), id: d.id, col: "administradores" }));
+
+                let html = '';
+                listaGeralUsuarios.forEach((u, index) => {
+                    const statusClass = u.ativo ? '' : 'status-pendente';
+                    const statusTxt = u.ativo ? 'Ativo' : 'Bloqueado';
+                    html += `
+                        <tr>
+                            <td><strong>${u.nome}</strong></td>
+                            <td>${u.email}</td>
+                            <td>${u.perfil}</td>
+                            <td><span class="status-badge ${statusClass}">${statusTxt}</span></td>
+                            <td><button class="btn-small" onclick="abrirEdicao(${index})">Editar</button></td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html || '<tr><td colspan="5">Nenhum utilizador encontrado.</td></tr>';
+            } catch (error) { console.error(error); tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar.</td></tr>'; }
+        };
+
+        window.abrirEdicao = function(index) {
+            const u = listaGeralUsuarios[index];
+            document.getElementById('edit-id').value = u.id;
+            document.getElementById('edit-colecao').value = u.col;
+            document.getElementById('edit-nome').value = u.nome || "";
+            document.getElementById('edit-telefone').value = u.telefone || "";
+            document.getElementById('edit-regiao').value = u.regiao || "";
+            document.getElementById('edit-ativo').value = u.ativo ? "true" : "false";
+            document.getElementById('modal-editar').style.display = 'flex';
+        };
+
+        window.fecharModalEdit = function() {
+            document.getElementById('modal-editar').style.display = 'none';
+        };
+
+        document.getElementById('btn-atualizar-user').addEventListener('click', async () => {
+            const id = document.getElementById('edit-id').value;
+            const col = document.getElementById('edit-colecao').value;
+            const isAtivo = document.getElementById('edit-ativo').value === "true";
+
+            try {
+                await updateDoc(doc(db, col, id), {
+                    nome: document.getElementById('edit-nome').value,
+                    telefone: document.getElementById('edit-telefone').value,
+                    regiao: document.getElementById('edit-regiao').value,
+                    ativo: isAtivo,
+                    atualizadoEm: new Date()
+                });
+                alert("Dados atualizados com sucesso!");
+                fecharModalEdit();
+                carregarUsuarios();
+            } catch (error) {
+                console.error(error); alert("Erro ao atualizar utilizador.");
+            }
+        });
+    </script>
+</body>
+</html>
