@@ -231,7 +231,7 @@
 
     <!-- SCRIPTS LIGAÇÃO FIREBASE -->
     <script type="module">
-        // ATENÇÃO: Importamos as credenciais do seu novo ficheiro secreto
+        // Importa a chave do mesmo ficheiro protegido do PWA
         import { firebaseConfig } from './firebase-config.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
@@ -247,7 +247,7 @@
                 document.getElementById('tela-login-admin').style.display = 'none';
                 document.getElementById('sidebar-admin').style.display = 'flex';
                 document.getElementById('main-admin').style.display = 'block';
-                carregarAgendaGeral(); // Arranca os dados de forma segura
+                carregarAgendaGeral(); 
             } else {
                 document.getElementById('tela-login-admin').style.display = 'flex';
                 document.getElementById('sidebar-admin').style.display = 'none';
@@ -269,7 +269,6 @@
         });
 
         document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-
 
         // LÓGICA DO PAINEL ADMIN
         let mapaClientes = {};
