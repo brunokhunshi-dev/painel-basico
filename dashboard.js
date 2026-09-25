@@ -298,6 +298,22 @@ function resetStateForSession() {
     clearCharts(); clearMapLayers();
 }
 
+// === SISTEMA DE LOGS DE ERRO (ALTERAÇÃO 3) ===
+async function salvarLogErro(contexto, mensagemErro) {
+    try {
+        const idLog = "log_" + Date.now();
+        await setDoc(doc(db, "logs_sistema", idLog), {
+            contexto: contexto,
+            erro: String(mensagemErro),
+            dataHora: new Date(),
+            usuarioId: state.profile?.id || "desconhecido"
+        });
+        console.warn(`[LOG Registrado] Erro no módulo ${contexto}:`, mensagemErro);
+    } catch (e) {
+        console.error("Falha ao salvar log de erro na base de dados:", e);
+    }
+}
+
 async function safeGetProfileFromCollection(collectionName, user) {
     try {
         const uidSnapshot = await getDoc(doc(db, collectionName, user.uid));
@@ -797,12 +813,16 @@ function renderRanking() {
 function renderTable() {
     const body = $("dashboard-table-body"); 
     const empty = $("table-empty");
-    const count = state.filteredActivities.length; 
+    
+    // === ALTERAÇÃO 2: Tabela de Agenda consome tudo sem influência dos filtros dos KPIs ===
+    const arrayParaTabela = state.activities; 
+    
+    const count = arrayParaTabela.length; 
     const totalPages = Math.max(1, Math.ceil(count / DASHBOARD_CONFIG.pageSize));
     state.currentPage = Math.min(Math.max(1, state.currentPage), totalPages);
 
     const start = (state.currentPage - 1) * DASHBOARD_CONFIG.pageSize;
-    const pageItems = state.filteredActivities.slice(start, start + DASHBOARD_CONFIG.pageSize);
+    const pageItems = arrayParaTabela.slice(start, start + DASHBOARD_CONFIG.pageSize);
     body.replaceChildren();
 
     if ($("table-count")) $("table-count").textContent = `${formatNumber(count)} registros`;
@@ -926,7 +946,8 @@ function openProfessionalProfile(id) {
 function exportCsv() {
     if (!state.filteredActivities.length) return;
     const headers = ["ID", "Data agendada", "Hora agendada", "Profissional", "Cliente", "Cidade", "Tipo", "Status", "Check-in", "Check-out"];
-    const rows = state.filteredActivities.map(a => [a.id, formatDate(a.scheduledAt), formatTime(a.scheduledAt), a.professional.name, a.client.name, a.client.city, a.type, a.status, formatDateTime(a.checkinAt), formatDateTime(a.checkoutAt)]);
+    // Mantendo uso das state.filteredActivities no CSV ou trocando para state.activities, dependendo se o CSV deve ignorar filtros
+    const rows = state.activities.map(a => [a.id, formatDate(a.scheduledAt), formatTime(a.scheduledAt), a.professional.name, a.client.name, a.client.city, a.type, a.status, formatDateTime(a.checkinAt), formatDateTime(a.checkoutAt)]);
     
     const content = [headers, ...rows].map(row => {
         return row.map(val => {
@@ -1084,7 +1105,7 @@ window.deletarEquipeAdmin = async function(col, id) {
     }
 }
 
-// === BRASIL API (CNPJ E CEP PARA O MODAL) ===
+// === BRASIL API (CNPJ E CEP PARA O MODAL) COM LOGS ===
 function initBrasilAPI() {
     const iptCnpj = $("mc-cnpj"); 
     const iptCep = $("mc-cep");
@@ -1110,9 +1131,13 @@ function initBrasilAPI() {
                         lblStatus.style.color = "var(--green)";
                     } else {
                         lblStatus.textContent = "(Falha)";
+                        // ALTERAÇÃO 3: Gravação de log de falha de retorno da API
+                        salvarLogErro("BrasilAPI_CNPJ", `Status da resposta não OK: ${res.status} ao buscar o CNPJ ${cnpjNum}`);
                     }
                 } catch(e) { 
                     lblStatus.textContent = "(Falha)"; 
+                    // ALTERAÇÃO 3: Gravação de log caso a requisição lance exceção (ex: timeout ou offline)
+                    salvarLogErro("BrasilAPI_CNPJ", e.message || e);
                 }
             }
         });
@@ -1137,9 +1162,13 @@ function initBrasilAPI() {
                         lblStatus.style.color = "var(--green)";
                     } else {
                         lblStatus.textContent = "(Falha)";
+                        // ALTERAÇÃO 3: Gravação de log
+                        salvarLogErro("BrasilAPI_CEP", `Status da resposta não OK: ${res.status} ao buscar o CEP ${cepNum}`);
                     }
                 } catch(e) { 
                     lblStatus.textContent = "(Falha)"; 
+                    // ALTERAÇÃO 3: Gravação de log
+                    salvarLogErro("BrasilAPI_CEP", e.message || e);
                 }
             }
         });
@@ -1206,7 +1235,8 @@ function bindEvents() {
     });
     
     $("pagina-proxima")?.addEventListener("click", () => { 
-        const total = Math.max(1, Math.ceil(state.filteredActivities.length / DASHBOARD_CONFIG.pageSize)); 
+        // Correção de state.currentPage < total baseada no array state.activities
+        const total = Math.max(1, Math.ceil(state.activities.length / DASHBOARD_CONFIG.pageSize)); 
         if (state.currentPage < total) { 
             state.currentPage++; 
             renderTable(); 
@@ -1242,20 +1272,67 @@ function bindEvents() {
         
         try {
             const id = $("mc-id").value || "cli_" + Date.now();
+            const cepLimpo = ($("mc-cep")?.value || "").replace(/\D/g, "");
+            const endereco = $("mc-endereco")?.value || "";
+            const cidade = $("mc-cidade")?.value || "";
+            const uf = ($("mc-uf")?.value || "").toUpperCase();
+
+            let latStr = "";
+            let lngStr = "";
+
+            // 1. Tenta obter coordenadas pelo CEP via BrasilAPI v2 (retorna location.coordinates)
+            if (cepLimpo.length === 8) {
+                try {
+                    const resCep = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`);
+                    if (resCep.ok) {
+                        const dadosCep = await resCep.json();
+                        const coords = dadosCep?.location?.coordinates;
+                        if (coords && coords.latitude && coords.longitude) {
+                            latStr = String(coords.latitude);
+                            lngStr = String(coords.longitude);
+                        }
+                    }
+                } catch (e) {
+                    salvarLogErro("Geocoding_BrasilAPI_CEP", e.message || e);
+                }
+            }
+
+            // 2. Se a BrasilAPI não retornar coordenadas do CEP, busca pelo endereço via Nominatim (OpenStreetMap)
+            if (!latStr || !lngStr) {
+                const queryParts = [endereco, cidade, uf, "Brasil"].filter(Boolean).join(", ");
+                if (queryParts) {
+                    try {
+                        const resGeo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(queryParts)}`);
+                        if (resGeo.ok) {
+                            const results = await resGeo.json();
+                            if (results && results.length > 0) {
+                                latStr = String(results[0].lat);
+                                lngStr = String(results[0].lon);
+                            }
+                        }
+                    } catch (e) {
+                        salvarLogErro("Geocoding_Nominatim", e.message || e);
+                    }
+                }
+            }
+
             const data = {
-                codigoCnpj: $("mc-cnpj").value ? ofuscarCNPJ($("mc-cnpj").value.replace(/\D/g, '')) : null,
+                codigoCnpj: $("mc-cnpj")?.value ? ofuscarCNPJ($("mc-cnpj").value.replace(/\D/g, "")) : null,
                 nome: $("mc-nome").value, 
-                cidade: $("mc-cidade").value, 
-                uf: $("mc-uf").value.toUpperCase(),
-                enderecoCompleto: $("mc-endereco").value, 
+                cidade: cidade, 
+                uf: uf,
+                enderecoCompleto: endereco, 
+                lat: latStr,
+                lng: lngStr,
                 status: "Ativo", 
                 atualizadoEm: new Date()
             };
-            if(!$("mc-id").value) {
+
+            if (!$("mc-id").value) {
                 data.criadoEm = new Date();
             }
             
-            await setDoc(doc(db, DASHBOARD_CONFIG.collections.clients, id), data, {merge: true});
+            await setDoc(doc(db, DASHBOARD_CONFIG.collections.clients, id), data, { merge: true });
             showToast("Loja salva com sucesso!", "success"); 
             $("modal-cliente").close(); 
             loadReferenceData(state.sessionVersion);
