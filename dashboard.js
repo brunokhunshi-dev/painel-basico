@@ -1023,22 +1023,12 @@ window.editarClienteAdmin = function(id) {
     $("mc-nome").value = c.name; 
     $("mc-cidade").value = c.city; 
     $("mc-uf").value = c.state; 
-    $("mc-endereco").value = c.address;
+    // Puxa o logradouro isolado se existir, senão puxa o endereço completo antigo
+    $("mc-endereco").value = c.raw.logradouro || c.address;
+    $("mc-numero").value = c.raw.numero || ""; 
     
     $("cliente-modal-title").textContent = "Editar Loja"; 
     $("modal-cliente").showModal();
-}
-
-window.deletarClienteAdmin = async function(id) {
-    if(confirm("Tem certeza que deseja excluir esta Loja/Cliente do sistema?")) {
-        try { 
-            await deleteDoc(doc(db, DASHBOARD_CONFIG.collections.clients, id)); 
-            showToast("Loja excluída.", "success"); 
-            loadReferenceData(state.sessionVersion); 
-        } catch (e) { 
-            showToast("Erro ao excluir.", "error"); 
-        }
-    }
 }
 
 // === GESTÃO DE EQUIPE ===
