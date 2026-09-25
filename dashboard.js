@@ -1274,14 +1274,14 @@ function bindEvents() {
             const id = $("mc-id").value || "cli_" + Date.now();
             const cepLimpo = ($("mc-cep")?.value || "").replace(/\D/g, "");
             const endereco = $("mc-endereco")?.value || "";
-            const numero = $("mc-numero")?.value || ""; // Puxa o número se houver um campo separado
+            const numero = $("mc-numero")?.value || ""; 
             const cidade = $("mc-cidade")?.value || "";
             const uf = ($("mc-uf")?.value || "").toUpperCase();
 
             let latStr = "";
             let lngStr = "";
 
-            // 1. Tenta obter coordenadas pelo CEP via BrasilAPI v2 (Muitas vezes retorna o centro do CEP)
+            // 1. Tenta obter coordenadas pelo CEP via BrasilAPI v2
             if (cepLimpo.length === 8) {
                 try {
                     const resCep = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`);
@@ -1298,8 +1298,7 @@ function bindEvents() {
                 }
             }
 
-            // 2. Se a BrasilAPI falhar ou quisermos garantir o endereço exato, busca via Nominatim (OpenStreetMap)
-            // OBS: Se você digita rua e número no mesmo campo "mc-endereco", a variável 'numero' ficará vazia e não atrapalhará.
+            // 2. Busca via Nominatim com o número exato para maior precisão
             if (!latStr || !lngStr) {
                 const logradouroCompleto = numero ? `${endereco}, ${numero}` : endereco;
                 const queryParts = [logradouroCompleto, cidade, uf, "Brasil"].filter(Boolean).join(", ");
@@ -1325,7 +1324,8 @@ function bindEvents() {
                 nome: $("mc-nome").value, 
                 cidade: cidade, 
                 uf: uf,
-                // Salva o endereço e o número juntos no banco, se preferir mantê-los concatenados:
+                logradouro: endereco, // Salva isolado para a edição
+                numero: numero,       // Salva isolado para a edição
                 enderecoCompleto: numero ? `${endereco}, ${numero}` : endereco, 
                 lat: latStr,
                 lng: lngStr,
