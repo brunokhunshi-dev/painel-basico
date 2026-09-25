@@ -3,707 +3,438 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel Administrativo - Advance Tintas</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root { --color-dark: #040438; --color-red: #F51E30; --color-bg: #F4F5F7; --color-white: #FFFFFF; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Outfit', sans-serif; }
-        body { background-color: var(--color-bg); color: var(--color-dark); display: flex; height: 100vh; overflow: hidden; }
-        
-        /* Sidebar */
-        .sidebar { width: 260px; background-color: var(--color-white); border-right: 1px solid #EAEAEA; display: flex; flex-direction: column; }
-        .logo { padding: 25px 20px; font-size: 1.4rem; font-weight: 900; color: var(--color-dark); border-bottom: 1px solid #EAEAEA; }
-        .logo span { color: var(--color-red); font-size: 0.65rem; display: block; margin-top: -2px; }
-        .menu-item { padding: 16px 20px; font-weight: 500; cursor: pointer; border-bottom: 1px solid #F9F9F9; transition: background 0.2s; color: #444; }
-        .menu-item:hover, .menu-item.active { background-color: #FEECEE; color: var(--color-red); border-right: 4px solid var(--color-red); font-weight: 600; }
-        
-        /* Main Content */
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
-        .section { display: none; background: var(--color-white); border-radius: 16px; padding: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.02); }
-        .section.active { display: block; }
-        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 2px solid #F0F0F0; padding-bottom: 15px; }
-        .section-title { font-size: 1.5rem; font-weight: 700; color: var(--color-dark); }
-        
-        /* Layout Grid Agenda / Delegação */
-        .dashboard-grid { display: grid; grid-template-columns: 1fr 380px; gap: 25px; align-items: start; }
-        .card-box { background: #FAFAFC; border: 1px solid #EFEFEF; border-radius: 12px; padding: 20px; }
-        .card-box h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 15px; color: var(--color-dark); }
+    <meta name="theme-color" content="#040438">
+    <meta name="robots" content="noindex,nofollow">
+    <title>Painel Administrativo | Advance Tintas</title>
 
-        /* Forms & Inputs */
-        .form-group { margin-bottom: 14px; }
-        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 5px; color: #555; }
-        input, select, textarea { width: 100%; padding: 11px 14px; border: 1px solid #DDD; border-radius: 8px; outline: none; font-size: 0.9rem; background: #FFF; }
-        input:focus, select:focus, textarea:focus { border-color: var(--color-red); }
-        .btn-primary { background-color: var(--color-red); color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 0.95rem; width: 100%; transition: opacity 0.2s; }
-        .btn-primary:hover { opacity: 0.9; }
-        .btn-small { background-color: var(--color-dark); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; }
-        .btn-delete { background-color: #FFEBEE; color: #D32F2F; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75rem; font-weight: 600; margin-left: 5px; }
-        .btn-delete:hover { background-color: #FFCDD2; }
-        
-        /* Filtros Inteligentes de Tabela */
-        .filter-bar { display: flex; gap: 12px; margin-bottom: 20px; }
-        .filter-bar input, .filter-bar select { max-width: 240px; }
-
-        /* Tables */
-        table { width: 100%; border-collapse: collapse; margin-top: 5px; }
-        th, td { padding: 12px 14px; text-align: left; border-bottom: 1px solid #EEE; }
-        th { background-color: #F9F9FB; font-weight: 600; color: #666; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
-        td { font-size: 0.9rem; }
-        .status-badge { background-color: #E8F5E9; color: #2E7D32; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
-        .status-pendente { background-color: #FFF3E0; color: #EF6C00; }
-        
-        /* Modais */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
-        .modal-content { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-header h3 { font-size: 1.25rem; font-weight: 700; color: var(--color-dark); }
-        .btn-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #888; }
-
-        /* Login Screen */
-        #tela-login-admin { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--color-bg); display: flex; justify-content: center; align-items: center; z-index: 2000; }
-        .login-box { background: white; padding: 40px; border-radius: 16px; width: 100%; max-width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+    <link rel="stylesheet" href="./dashboard.css?v=2.2.0">
 </head>
 <body>
+    <!-- TELA DE LOGIN -->
+    <section id="dashboard-login" class="login-screen" aria-labelledby="login-title">
+        <div class="login-card">
+            <div class="brand brand-login" aria-label="Advance Tintas">
+                ADVANCE<span>TINTAS</span>
+            </div>
+            <p class="login-eyebrow">Gestão de campo</p>
+            <h1 id="login-title">Dashboard Admin</h1>
+            <p class="login-description">Acesso restrito a gestores e administradores.</p>
 
-    <!-- TELA DE LOGIN ADMIN -->
-    <div id="tela-login-admin">
-        <div class="login-box">
-            <div class="logo" style="border: none; padding: 0; margin-bottom: 30px; text-align: center;">ADVANCE<span>TINTAS | ADMIN</span></div>
-            <form id="form-login-admin">
-                <div class="form-group">
-                    <label>E-mail Corporativo</label>
-                    <input type="email" id="admin-email" required>
-                </div>
-                <div class="form-group">
-                    <label>Senha</label>
-                    <input type="password" id="admin-senha" required>
-                </div>
-                <button type="submit" class="btn-primary" id="btn-login-admin" style="width: 100%; margin-top: 15px;">Acessar Painel</button>
+            <form id="dashboard-login-form" novalidate>
+                <label class="field-label" for="dashboard-email">E-mail corporativo</label>
+                <input id="dashboard-email" class="field-control" type="email" autocomplete="email" required placeholder="seu.email@advancetintas.com.br">
+
+                <label class="field-label" for="dashboard-senha">Senha</label>
+                <input id="dashboard-senha" class="field-control" type="password" autocomplete="current-password" required placeholder="Sua senha">
+
+                <button id="dashboard-btn-entrar" class="button button-primary button-block" type="submit">Entrar</button>
+                <p id="dashboard-login-erro" class="form-error" role="alert" hidden></p>
             </form>
         </div>
-    </div>
+    </section>
 
-    <!-- SIDEBAR DE NAVEGAÇÃO -->
-    <div class="sidebar" id="sidebar-admin" style="display: none;">
-        <div class="logo">ADVANCE<span>TINTAS | ADMIN</span></div>
-        <div class="menu-item active" onclick="mostrarSecao('sec-agenda', this)">Agenda & Delegação</div>
-        <div class="menu-item" onclick="mostrarSecao('sec-clientes', this)">Gestão de Clientes</div>
-        <div class="menu-item" onclick="mostrarSecao('sec-usuarios', this)">Equipe & Usuários</div>
-        <div class="menu-item" id="btn-logout" style="color: #888; margin-top: auto;">Sair do Painel</div>
-    </div>
-
-    <!-- CONTEÚDO PRINCIPAL -->
-    <div class="main-content" id="main-admin" style="display: none;">
-        
-        <!-- SECÇÃO 1: AGENDA GERAL E DELEGAÇÃO -->
-        <div id="sec-agenda" class="section active">
-            <div class="section-header">
-                <h2 class="section-title">Agenda Geral de Visitas</h2>
-                <button class="btn-small" onclick="carregarAgendaGeral()">Atualizar Dados</button>
-            </div>
-
-            <!-- Filtros Inteligentes -->
-            <div class="filter-bar">
-                <input type="text" id="filtro-texto" placeholder="Filtrar por cliente ou motivo..." oninput="filtrarAgenda()">
-                <select id="filtro-status" onchange="filtrarAgenda()">
-                    <option value="">Todos os Status</option>
-                    <option value="Pendente">Pendente</option>
-                    <option value="Em andamento">Em andamento</option>
-                    <option value="Concluída">Concluída</option>
-                </select>
-            </div>
-
-            <div class="dashboard-grid">
-                <!-- Tabela de Agenda -->
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Data/Hora</th>
-                                <th>Cliente</th>
-                                <th>Responsável</th>
-                                <th>Motivo</th>
-                                <th>Status</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-agenda">
-                            <tr><td colspan="6">A carregar agenda...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Formulário Rápido de Delegação Integrado -->
-                <div class="card-box">
-                    <h3>Delegar Nova Visita</h3>
-                    <form id="form-visita">
-                        <div class="form-group">
-                            <label>Cliente</label>
-                            <select id="v-cliente" required><option value="">Carregando...</option></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Data</label>
-                            <input type="date" id="v-data" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Horário</label>
-                            <input type="time" id="v-hora" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Técnico Responsável</label>
-                            <select id="v-responsavel" required><option value="">Carregando...</option></select>
-                        </div>
-                        <div class="form-group">
-                            <label>Motivo da Visita</label>
-                            <input type="text" id="v-motivo" placeholder="Ex: Suporte, Treinamento" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Nota / Instruções</label>
-                            <textarea id="v-nota" rows="2" placeholder="Opcional..."></textarea>
-                        </div>
-                        <button type="submit" class="btn-primary" id="btn-salvar-visita" style="margin-top: 5px;">Atribuir Visita</button>
-                    </form>
+    <!-- PAINEL COMPLETO -->
+    <div id="dashboard-shell" class="dashboard-shell" hidden>
+        <!-- BARRA SUPERIOR E NAVEGAÇÃO -->
+        <header class="topbar">
+            <div class="topbar-brand-group">
+                <div class="brand">ADVANCE<span>TINTAS</span></div>
+                <div class="main-nav">
+                    <button class="nav-tab active" data-target="aba-dashboard">Visão Geral (Kpis)</button>
+                    <button class="nav-tab" data-target="aba-agenda">Agenda & Atividades</button>
+                    <button class="nav-tab" data-target="aba-clientes">Lojas & Clientes</button>
+                    <button class="nav-tab" data-target="aba-equipe">Equipe & Usuários</button>
                 </div>
             </div>
-        </div>
 
-        <!-- SECÇÃO 2: PAINEL DE CLIENTES -->
-        <div id="sec-clientes" class="section">
-            <div class="section-header">
-                <h2 class="section-title">Diretório de Lojas e Clientes</h2>
-                <button class="btn-small" onclick="abrirModalCliente()">+ Cadastrar Nova Loja</button>
+            <div class="topbar-actions">
+                <div class="sync-status" aria-live="polite">
+                    <span id="dashboard-sync-dot" class="sync-dot"></span>
+                    <span id="dashboard-sync-text">Preparando dados...</span>
+                </div>
+                <div class="user-summary">
+                    <span id="dashboard-user-name">Usuário</span>
+                    <small id="dashboard-user-role">Acesso</small>
+                </div>
+                <button id="dashboard-btn-atualizar" class="icon-button" type="button" title="Atualizar dados" aria-label="Atualizar dados">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2M4 4v5h5M4 13a8.1 8.1 0 0 0 15.5 2M20 20v-5h-5"></path></svg>
+                </button>
+                <button id="dashboard-btn-sair" class="button button-secondary" type="button">Sair</button>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nome da Loja</th>
-                        <th>Cidade / UF</th>
-                        <th>Endereço Completo</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="tabela-clientes">
-                    <tr><td colspan="5">A carregar clientes...</td></tr>
-                </tbody>
-            </table>
-        </div>
+        </header>
 
-        <!-- SECÇÃO 3: EQUIPE E USUÁRIOS -->
-        <div id="sec-usuarios" class="section">
-            <div class="section-header">
-                <h2 class="section-title">Equipe e Controlo de Acessos</h2>
-                <button class="btn-small" onclick="abrirModalUsuario()">+ Cadastrar Novo Membro</button>
+        <main class="dashboard-main">
+            <!-- ABA 1: VISÃO GERAL (O seu Dashboard antigo e completo) -->
+            <div id="aba-dashboard" class="aba-conteudo active">
+                <section class="panel filters-panel" aria-labelledby="filters-title">
+                    <div class="section-heading compact-heading">
+                        <div>
+                            <p class="section-eyebrow">Período e segmentação</p>
+                            <h2 id="filters-title">Filtros</h2>
+                        </div>
+                        <button id="dashboard-btn-limpar" class="text-button" type="button">Limpar filtros</button>
+                    </div>
+
+                    <div class="filters-grid">
+                        <label class="filter-field">
+                            <span>Data inicial</span>
+                            <input id="filtro-data-inicial" type="date">
+                        </label>
+                        <label class="filter-field">
+                            <span>Data final</span>
+                            <input id="filtro-data-final" type="date">
+                        </label>
+                        <label class="filter-field">
+                            <span>Profissional</span>
+                            <select id="filtro-profissional">
+                                <option value="">Todos os profissionais</option>
+                            </select>
+                        </label>
+                        <label class="filter-field">
+                            <span>Status</span>
+                            <select id="filtro-status">
+                                <option value="">Todos os status</option>
+                                <option value="Pendente">Pendente</option>
+                                <option value="Em andamento">Em andamento</option>
+                                <option value="Concluída">Concluída</option>
+                            </select>
+                        </label>
+                        <label class="filter-field">
+                            <span>Tipo</span>
+                            <select id="filtro-tipo">
+                                <option value="">Todos os tipos</option>
+                                <option value="Visita comercial">Visita comercial</option>
+                                <option value="Treinamento">Treinamento</option>
+                            </select>
+                        </label>
+                        <label class="filter-field filter-search">
+                            <span>Cliente</span>
+                            <input id="filtro-cliente" type="search" autocomplete="off" placeholder="Buscar loja ou cliente">
+                        </label>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button id="dashboard-btn-aplicar" class="button button-primary" type="button">Aplicar filtros</button>
+                        <button id="dashboard-btn-exportar" class="button button-secondary" type="button">Exportar CSV</button>
+                    </div>
+                </section>
+
+                <section id="dashboard-kpis" class="kpi-grid" aria-label="Indicadores principais">
+                    <article class="kpi-card">
+                        <div class="kpi-icon kpi-icon-navy"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg></div>
+                        <div><span>Total no período</span><strong id="kpi-total">0</strong><small id="kpi-total-sub">0 clientes</small></div>
+                    </article>
+                    <article class="kpi-card">
+                        <div class="kpi-icon kpi-icon-green"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></div>
+                        <div><span>Concluídas</span><strong id="kpi-concluidas">0</strong><small id="kpi-concluidas-sub">0% de conclusão</small></div>
+                    </article>
+                    <article class="kpi-card">
+                        <div class="kpi-icon kpi-icon-red"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></div>
+                        <div><span>Em andamento</span><strong id="kpi-andamento">0</strong><small id="kpi-andamento-sub">Agora</small></div>
+                    </article>
+                    <article class="kpi-card">
+                        <div class="kpi-icon kpi-icon-amber"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Z"></path><path d="M12 6v6l4 2"></path></svg></div>
+                        <div><span>Pendentes</span><strong id="kpi-pendentes">0</strong><small id="kpi-pendentes-sub">Visitas agendadas</small></div>
+                    </article>
+                    <article class="kpi-card">
+                        <div class="kpi-icon kpi-icon-blue"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14.5"></path><path d="M4 18h16M8 7h8M8 11h5"></path></svg></div>
+                        <div><span>Treinamentos</span><strong id="kpi-treinamentos">0</strong><small id="kpi-treinamentos-sub">0% das atividades</small></div>
+                    </article>
+                    <article class="kpi-card">
+                        <div class="kpi-icon kpi-icon-purple"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M12 3v18"></path><circle cx="12" cy="12" r="9"></circle></svg></div>
+                        <div><span>Duração média</span><strong id="kpi-duracao">--</strong><small id="kpi-duracao-sub">Visitas concluídas</small></div>
+                    </article>
+                </section>
+
+                <section class="analytics-grid">
+                    <article class="panel chart-card chart-card-wide">
+                        <div class="section-heading">
+                            <div><p class="section-eyebrow">Evolução</p><h2>Atividades por dia</h2></div>
+                        </div>
+                        <div class="chart-wrapper"><canvas id="grafico-evolucao"></canvas></div>
+                        <p id="grafico-evolucao-vazio" class="empty-state" hidden>Não há dados para o período.</p>
+                    </article>
+
+                    <article class="panel chart-card">
+                        <div class="section-heading">
+                            <div><p class="section-eyebrow">Distribuição</p><h2>Status</h2></div>
+                        </div>
+                        <div class="chart-wrapper chart-wrapper-small"><canvas id="grafico-status"></canvas></div>
+                        <p id="grafico-status-vazio" class="empty-state" hidden>Não há dados para o período.</p>
+                    </article>
+
+                    <article class="panel chart-card chart-card-wide">
+                        <div class="section-heading">
+                            <div><p class="section-eyebrow">Equipe</p><h2>Atividades por profissional</h2></div>
+                        </div>
+                        <div class="chart-wrapper"><canvas id="grafico-equipe"></canvas></div>
+                        <p id="grafico-equipe-vazio" class="empty-state" hidden>Não há dados para o período.</p>
+                    </article>
+                </section>
+
+                <section class="panel map-panel" aria-labelledby="map-title">
+                    <div class="section-heading map-heading">
+                        <div><p class="section-eyebrow">Geolocalização</p><h2 id="map-title">Mapa de visitas</h2><p id="map-summary" class="section-description">Nenhum ponto carregado.</p></div>
+                        <div class="map-controls">
+                            <label><span>Visualização</span><select id="mapa-modo"><option value="pontos">Pontos</option><option value="calor">Mapa de calor</option><option value="rotas">Rotas da equipe</option></select></label>
+                            <button id="dashboard-btn-google-maps" class="button button-secondary" type="button" disabled>Abrir no Google Maps</button>
+                        </div>
+                    </div>
+                    <div id="mapa-dashboard" class="dashboard-map" aria-label="Mapa com localização"></div>
+                    <p id="mapa-indisponivel" class="empty-state" hidden>O mapa não pôde ser carregado.</p>
+                </section>
+
+                <section class="operations-grid">
+                    <article class="panel team-card">
+                        <div class="section-heading"><div><p class="section-eyebrow">Desempenho</p><h2>Ranking da equipe</h2></div></div>
+                        <div id="ranking-equipe" class="ranking-list"></div>
+                        <p id="ranking-vazio" class="empty-state" hidden>Não há profissionais no período.</p>
+                    </article>
+                </section>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>E-mail Corporativo</th>
-                        <th>Perfil</th>
-                        <th>Região</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="tabela-usuarios">
-                    <tr><td colspan="6">A carregar equipa...</td></tr>
-                </tbody>
-            </table>
-        </div>
 
+            <!-- ABA 2: AGENDA & ATIVIDADES -->
+            <div id="aba-agenda" class="aba-conteudo" hidden>
+                <div class="crud-layout">
+                    <!-- Tabela de Agenda -->
+                    <article class="panel table-card">
+                        <div class="section-heading table-heading" style="margin-bottom: 5px;">
+                            <div>
+                                <p class="section-eyebrow">Operação</p>
+                                <h2>Atividades Registadas</h2>
+                            </div>
+                            <span id="table-count" class="table-count">0 registros</span>
+                        </div>
+                        <!-- Reutilizamos a tabela principal da visão geral -->
+                        <div class="table-scroll">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Data/Hora</th>
+                                        <th>Profissional</th>
+                                        <th>Cliente / Local</th>
+                                        <th>Tipo</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashboard-table-body"></tbody>
+                            </table>
+                        </div>
+                        <p id="table-empty" class="empty-state" hidden>Nenhuma atividade encontrada.</p>
+                        
+                        <div class="pagination">
+                            <button id="pagina-anterior" class="icon-button" type="button" aria-label="Página anterior"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg></button>
+                            <span id="pagina-info">Página 1 de 1</span>
+                            <button id="pagina-proxima" class="icon-button" type="button" aria-label="Próxima página"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
+                        </div>
+                    </article>
+
+                    <!-- Formulário Lateral de Nova Visita -->
+                    <article class="panel side-form-panel">
+                        <h2 style="font-size: 1.15rem; margin-top: 0;">Delegar Nova Visita</h2>
+                        <p class="section-description" style="margin-bottom: 20px;">Atribua uma visita a um membro da equipe.</p>
+                        <form id="form-nova-visita">
+                            <label class="field-label">Cliente da Base de Dados</label>
+                            <select id="v-cliente" class="field-control" required><option value="">Carregando clientes...</option></select>
+                            
+                            <label class="field-label">Data</label>
+                            <input type="date" id="v-data" class="field-control" required>
+                            
+                            <label class="field-label">Horário</label>
+                            <input type="time" id="v-hora" class="field-control" required>
+                            
+                            <label class="field-label">Técnico / Promotor Responsável</label>
+                            <select id="v-responsavel" class="field-control" required><option value="">Carregando equipe...</option></select>
+                            
+                            <label class="field-label">Tipo / Motivo da Visita</label>
+                            <select id="v-motivo" class="field-control" required>
+                                <option value="Visita comercial">Visita comercial</option>
+                                <option value="Treinamento">Treinamento</option>
+                                <option value="Assistência Técnica">Assistência Técnica</option>
+                            </select>
+                            
+                            <label class="field-label">Nota / Instruções Internas</label>
+                            <textarea id="v-nota" class="field-control" rows="3" placeholder="Opcional..."></textarea>
+                            
+                            <button type="submit" class="button button-primary button-block" id="btn-salvar-visita">Atribuir Visita</button>
+                        </form>
+                    </article>
+                </div>
+            </div>
+
+            <!-- ABA 3: LOJAS & CLIENTES -->
+            <div id="aba-clientes" class="aba-conteudo" hidden>
+                <article class="panel table-card">
+                    <div class="section-heading table-heading">
+                        <div>
+                            <p class="section-eyebrow">Diretório</p>
+                            <h2>Lojas e Clientes</h2>
+                        </div>
+                        <button class="button button-primary" id="btn-abrir-modal-cliente">+ Cadastrar Loja</button>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome Fantasia / Razão</th>
+                                    <th>Cidade / UF</th>
+                                    <th>Endereço Completo</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-clientes-body">
+                                <tr><td colspan="4" class="empty-state">A carregar clientes...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </div>
+
+            <!-- ABA 4: EQUIPE E USUÁRIOS -->
+            <div id="aba-equipe" class="aba-conteudo" hidden>
+                <article class="panel table-card">
+                    <div class="section-heading table-heading">
+                        <div>
+                            <p class="section-eyebrow">Controlo de acessos</p>
+                            <h2>Membros da Equipe</h2>
+                        </div>
+                        <button class="button button-primary" id="btn-abrir-modal-equipe">+ Novo Membro</button>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome do Profissional</th>
+                                    <th>E-mail Corporativo</th>
+                                    <th>Perfil / Coleção</th>
+                                    <th>Região</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-equipe-body">
+                                <tr><td colspan="6" class="empty-state">A carregar equipe...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </div>
+        </main>
     </div>
 
-    <!-- MODAL: CADASTRAR NOVO CLIENTE -->
-    <div id="modal-cliente" class="modal-overlay">
-        <div class="modal-content">
+    <!-- MODAL 1: DETALHES GERAIS (Reutilizado para ver relatórios) -->
+    <dialog id="dashboard-modal" class="dashboard-modal">
+        <div class="modal-card">
             <div class="modal-header">
-                <h3>Cadastrar Nova Loja</h3>
-                <button class="btn-close" onclick="fecharModalCliente()">×</button>
+                <div><p id="modal-eyebrow" class="section-eyebrow">Detalhes</p><h2 id="modal-title">Atividade</h2></div>
+                <button id="modal-fechar" class="icon-button" type="button" aria-label="Fechar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
             </div>
-            <form id="form-cliente-modal">
-                <div class="form-group">
-                    <label>CNPJ</label>
-                    <input type="text" id="mc-cnpj" placeholder="Apenas números" maxlength="18" required>
-                </div>
-                <div class="form-group">
-                    <label>Nome Fantasia</label>
-                    <input type="text" id="mc-nome" required>
-                </div>
-                <div class="form-group">
-                    <label>Cidade</label>
-                    <input type="text" id="mc-cidade" required>
-                </div>
-                <div class="form-group">
-                    <label>UF</label>
-                    <input type="text" id="mc-uf" maxlength="2" required style="text-transform: uppercase;">
-                </div>
-                <div class="form-group">
-                    <label>Endereço Completo (Rua, Número, Bairro)</label>
-                    <input type="text" id="mc-endereco" required>
-                </div>
-                <button type="submit" class="btn-primary" id="btn-salvar-modal-cli" style="margin-top: 15px;">Salvar Loja</button>
-            </form>
+            <div id="modal-content" class="modal-content"></div>
         </div>
-    </div>
+    </dialog>
 
-    <!-- MODAL: EDITAR CLIENTE -->
-    <div id="modal-editar-cliente" class="modal-overlay">
-        <div class="modal-content">
+    <!-- MODAL 2: CADASTRO / EDIÇÃO DE CLIENTE -->
+    <dialog id="modal-cliente" class="dashboard-modal">
+        <div class="modal-card" style="width: 500px;">
             <div class="modal-header">
-                <h3>Editar Loja / Cliente</h3>
-                <button class="btn-close" onclick="fecharModalEditarCliente()">×</button>
+                <div><p class="section-eyebrow" id="cliente-modal-eyebrow">Cadastro</p><h2 id="cliente-modal-title">Nova Loja</h2></div>
+                <button id="btn-fechar-cliente" class="icon-button" type="button"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
             </div>
-            <input type="hidden" id="edit-cli-id">
-            <div class="form-group">
-                <label>Nome Fantasia</label>
-                <input type="text" id="edit-cli-nome" required>
+            <div class="modal-content">
+                <form id="form-cliente-modal">
+                    <input type="hidden" id="mc-id">
+                    
+                    <label class="field-label">CNPJ <span id="mc-status-cnpj" style="color:var(--red); font-size: 0.8rem; font-weight: normal;"></span></label>
+                    <input type="tel" id="mc-cnpj" class="field-control" placeholder="Apenas números (opcional p/ edição)" maxlength="18">
+
+                    <label class="field-label">Nome Fantasia</label>
+                    <input type="text" id="mc-nome" class="field-control" required>
+
+                    <div style="border-top: 1px solid var(--line); margin: 20px 0;"></div>
+
+                    <label class="field-label">CEP <span id="mc-status-cep" style="color:var(--red); font-size: 0.8rem; font-weight: normal;"></span></label>
+                    <input type="tel" id="mc-cep" class="field-control" placeholder="Busca automática de endereço" maxlength="9">
+
+                    <label class="field-label">Endereço (Rua/Av, Bairro, etc)</label>
+                    <input type="text" id="mc-endereco" class="field-control" required>
+
+                    <div style="display: flex; gap: 15px;">
+                        <div style="flex: 2;">
+                            <label class="field-label">Cidade</label>
+                            <input type="text" id="mc-cidade" class="field-control" required>
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="field-label">UF</label>
+                            <input type="text" id="mc-uf" class="field-control" maxlength="2" style="text-transform: uppercase;" required>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="button button-primary button-block" id="btn-salvar-modal-cli">Salvar Loja</button>
+                </form>
             </div>
-            <div class="form-group">
-                <label>Cidade</label>
-                <input type="text" id="edit-cli-cidade" required>
-            </div>
-            <div class="form-group">
-                <label>UF</label>
-                <input type="text" id="edit-cli-uf" maxlength="2" required style="text-transform: uppercase;">
-            </div>
-            <div class="form-group">
-                <label>Endereço Completo</label>
-                <input type="text" id="edit-cli-endereco" required>
-            </div>
-            <button class="btn-primary" id="btn-atualizar-cliente" style="margin-top: 15px;">Salvar Alterações</button>
         </div>
-    </div>
+    </dialog>
 
-    <!-- MODAL: CADASTRAR NOVO USUÁRIO -->
-    <div id="modal-usuario" class="modal-overlay">
-        <div class="modal-content">
+    <!-- MODAL 3: CADASTRO / EDIÇÃO DE EQUIPE -->
+    <dialog id="modal-equipe" class="dashboard-modal">
+        <div class="modal-card" style="width: 450px;">
             <div class="modal-header">
-                <h3>Cadastrar Novo Membro</h3>
-                <button class="btn-close" onclick="fecharModalUsuario()">×</button>
+                <div><p class="section-eyebrow" id="equipe-modal-eyebrow">Cadastro</p><h2 id="equipe-modal-title">Membro da Equipe</h2></div>
+                <button id="btn-fechar-equipe" class="icon-button" type="button"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
             </div>
-            <form id="form-usuario-modal">
-                <div class="form-group">
-                    <label>Nome Completo</label>
-                    <input type="text" id="mu-nome" required>
-                </div>
-                <div class="form-group">
-                    <label>E-mail (Igual ao Firebase Auth)</label>
-                    <input type="email" id="mu-email" required>
-                </div>
-                <div class="form-group">
-                    <label>Perfil do Sistema</label>
-                    <select id="mu-perfil" required>
-                        <option value="promotores">Promotor Técnico</option>
+            <div class="modal-content">
+                <form id="form-equipe-modal">
+                    <input type="hidden" id="mu-id">
+                    <input type="hidden" id="mu-colecao-original">
+
+                    <label class="field-label">Nome Completo</label>
+                    <input type="text" id="mu-nome" class="field-control" required>
+
+                    <label class="field-label">E-mail Corporativo</label>
+                    <input type="email" id="mu-email" class="field-control" required>
+
+                    <label class="field-label">Perfil do Sistema / Coleção</label>
+                    <select id="mu-perfil" class="field-control" required>
+                        <option value="promotores">Promotor Técnico de Vendas</option>
                         <option value="assistencia">Assistente Técnico</option>
-                        <option value="administradores">Administrador</option>
+                        <option value="administradores">Administrador Geral</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label>Região de Atuação</label>
-                    <input type="text" id="mu-regiao" placeholder="Ex: Sudeste">
-                </div>
-                <div class="form-group">
-                    <label>Telefone</label>
-                    <input type="text" id="mu-telefone" placeholder="(19) 90000-0000">
-                </div>
-                <button type="submit" class="btn-primary" id="btn-salvar-modal-user" style="margin-top: 15px;">Cadastrar Membro</button>
-            </form>
+
+                    <label class="field-label">Região de Atuação</label>
+                    <input type="text" id="mu-regiao" class="field-control" placeholder="Ex: Sudeste">
+
+                    <label class="field-label">Telefone de Contato</label>
+                    <input type="text" id="mu-telefone" class="field-control" placeholder="(19) 90000-0000">
+
+                    <label class="field-label" id="label-status-equipe" hidden>Status de Acesso</label>
+                    <select id="mu-status" class="field-control" hidden>
+                        <option value="true">Ativo (Permitir acesso)</option>
+                        <option value="false">Inativo (Bloqueado)</option>
+                    </select>
+
+                    <button type="submit" class="button button-primary button-block" id="btn-salvar-modal-user">Cadastrar Membro</button>
+                </form>
+            </div>
+        </div>
+    </dialog>
+
+    <div id="dashboard-loading" class="loading-overlay" hidden>
+        <div class="loading-card" role="status" aria-live="polite">
+            <span class="spinner"></span>
+            <strong id="dashboard-loading-text">Carregando dados...</strong>
         </div>
     </div>
 
-    <!-- MODAL: EDITAR USUÁRIO -->
-    <div id="modal-editar" class="modal-overlay">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Editar Membro da Equipe</h3>
-                <button class="btn-close" onclick="fecharModalEdit()">×</button>
-            </div>
-            <input type="hidden" id="edit-id">
-            <input type="hidden" id="edit-colecao">
-            <div class="form-group">
-                <label>Nome</label>
-                <input type="text" id="edit-nome">
-            </div>
-            <div class="form-group">
-                <label>Telefone</label>
-                <input type="text" id="edit-telefone">
-            </div>
-            <div class="form-group">
-                <label>Região</label>
-                <input type="text" id="edit-regiao">
-            </div>
-            <div class="form-group">
-                <label>Status de Acesso</label>
-                <select id="edit-ativo">
-                    <option value="true">Ativo</option>
-                    <option value="false">Bloqueado</option>
-                </select>
-            </div>
-            <button class="btn-primary" id="btn-atualizar-user" style="margin-top: 15px;">Salvar Alterações</button>
-        </div>
-    </div>
+    <div id="dashboard-toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-    <!-- SCRIPTS DE LIGAÇÃO E CONTROLO -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-        import { getFirestore, collection, query, getDocs, doc, setDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAMDeRB1ZOOP919gcbcOoFgAsy6dNy7zS8",
-            authDomain: "banco-de-dados-monitor.firebaseapp.com",
-            projectId: "banco-de-dados-monitor",
-            storageBucket: "banco-de-dados-monitor.firebasestorage.app",
-            messagingSenderId: "248039911306",
-            appId: "1:248039911306:web:188ffff179b3ffb3ace273"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let mapaClientes = {};
-        let mapaEquipe = {};
-        let listaGeralVisitas = [];
-        let listaGeralClientes = [];
-        let listaGeralUsuarios = [];
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                document.getElementById('tela-login-admin').style.display = 'none';
-                document.getElementById('sidebar-admin').style.display = 'flex';
-                document.getElementById('main-admin').style.display = 'block';
-                carregarAgendaGeral();
-            } else {
-                document.getElementById('tela-login-admin').style.display = 'flex';
-                document.getElementById('sidebar-admin').style.display = 'none';
-                document.getElementById('main-admin').style.display = 'none';
-            }
-        });
-
-        document.getElementById('form-login-admin').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            try {
-                await signInWithEmailAndPassword(auth, document.getElementById('admin-email').value, document.getElementById('admin-senha').value);
-            } catch (err) { alert("Credenciais inválidas."); }
-        });
-
-        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
-
-        window.mostrarSecao = function(idSecao, el) {
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-            document.getElementById(idSecao).classList.add('active');
-            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
-            el.classList.add('active');
-
-            if(idSecao === 'sec-agenda') carregarAgendaGeral();
-            if(idSecao === 'sec-clientes') carregarClientesPainel();
-            if(idSecao === 'sec-usuarios') carregarUsuarios();
-        };
-
-        function fDataHora(dataFb) {
-            if(!dataFb) return "--/--/-- --:--";
-            const d = dataFb.toDate ? dataFb.toDate() : new Date(dataFb);
-            return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()} às ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
-        }
-
-        // CARREGAR DADOS DA AGENDA E DELEGAÇÃO
-        async function carregarDropdownsVisita() {
-            try {
-                const snapClientes = await getDocs(collection(db, "clientes"));
-                const selC = document.getElementById('v-cliente');
-                selC.innerHTML = '<option value="">Selecione um cliente...</option>';
-                snapClientes.forEach(d => {
-                    selC.innerHTML += `<option value="${d.id}">${d.data().nome} - ${d.data().cidade || ''}</option>`;
-                    mapaClientes[d.id] = d.data().nome;
-                });
-
-                const selE = document.getElementById('v-responsavel');
-                selE.innerHTML = '<option value="">Selecione um técnico...</option>';
-                
-                const sProm = await getDocs(collection(db, "promotores"));
-                sProm.forEach(d => { if(d.data().ativo) { selE.innerHTML += `<option value="${d.id}">[Promotor] ${d.data().nome}</option>`; mapaEquipe[d.id] = d.data().nome; } });
-
-                const sAst = await getDocs(collection(db, "assistencia"));
-                sAst.forEach(d => { if(d.data().ativo) { selE.innerHTML += `<option value="${d.id}">[Assistente] ${d.data().nome}</option>`; mapaEquipe[d.id] = d.data().nome; } });
-            } catch(e) { console.error(e); }
-        }
-
-        window.carregarAgendaGeral = async function() {
-            const tbody = document.getElementById('tabela-agenda');
-            tbody.innerHTML = '<tr><td colspan="6">A carregar...</td></tr>';
-            try {
-                if(Object.keys(mapaClientes).length === 0) await carregarDropdownsVisita();
-
-                const snap = await getDocs(collection(db, "atividades"));
-                listaGeralVisitas = [];
-                snap.forEach(d => { let v = d.data(); v.id = d.id; listaGeralVisitas.push(v); });
-                listaGeralVisitas.sort((a,b) => (b.data.toDate ? b.data.toDate() : new Date(b.data)) - (a.data.toDate ? a.data.toDate() : new Date(a.data)));
-                
-                renderizarTabelaAgenda(listaGeralVisitas);
-            } catch (error) { tbody.innerHTML = '<tr><td colspan="6">Erro ao carregar.</td></tr>'; }
-        };
-
-        function renderizarTabelaAgenda(visitas) {
-            const tbody = document.getElementById('tabela-agenda');
-            let html = '';
-            visitas.forEach(v => {
-                const nomeCli = mapaClientes[v.clienteId] || 'Desconhecido';
-                const nomeTec = mapaEquipe[v.ptvId] || 'Técnico Excluído';
-                const classStatus = v.status === 'Pendente' ? 'status-pendente' : '';
-                html += `
-                    <tr>
-                        <td>${fDataHora(v.data)}</td>
-                        <td><strong>${nomeCli}</strong></td>
-                        <td>${nomeTec}</td>
-                        <td>${v.objetivo || '-'}</td>
-                        <td><span class="status-badge ${classStatus}">${v.status}</span></td>
-                        <td><button class="btn-delete" onclick="deletarVisita('${v.id}')">Excluir</button></td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html || '<tr><td colspan="6">Nenhuma visita encontrada.</td></tr>';
-        }
-
-        window.filtrarAgenda = function() {
-            const txt = document.getElementById('filtro-texto').value.toLowerCase();
-            const status = document.getElementById('filtro-status').value;
-            
-            const filtradas = listaGeralVisitas.filter(v => {
-                const cli = (mapaClientes[v.clienteId] || '').toLowerCase();
-                const obj = (v.objetivo || '').toLowerCase();
-                const matchTxt = cli.includes(txt) || obj.includes(txt);
-                const matchStatus = status ? v.status === status : true;
-                return matchTxt && matchStatus;
-            });
-            renderizarTabelaAgenda(filtradas);
-        };
-
-        document.getElementById('form-visita').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-salvar-visita');
-            btn.disabled = true; btn.textContent = "A gravar...";
-            try {
-                const atvId = "atv_" + Date.now();
-                const dataCompleta = new Date(`${document.getElementById('v-data').value}T${document.getElementById('v-hora').value}:00`);
-                await setDoc(doc(db, "atividades", atvId), {
-                    clienteId: document.getElementById('v-cliente').value,
-                    ptvId: document.getElementById('v-responsavel').value,
-                    data: dataCompleta,
-                    objetivo: document.getElementById('v-motivo').value,
-                    nota: document.getElementById('v-nota').value,
-                    status: "Pendente", type: "Visita", criadoEm: new Date(), atualizadoEm: new Date()
-                });
-                alert("Visita delegada com sucesso!");
-                document.getElementById('form-visita').reset();
-                carregarAgendaGeral();
-            } catch (err) { alert("Erro ao agendar."); } finally { btn.disabled = false; btn.textContent = "Atribuir Visita"; }
-        });
-
-        window.deletarVisita = async function(id) {
-            if(confirm("Deseja realmente excluir esta visita agendada?")) {
-                try {
-                    await deleteDoc(doc(db, "atividades", id));
-                    alert("Visita excluída com sucesso!");
-                    carregarAgendaGeral();
-                } catch(e) { alert("Erro ao excluir visita."); }
-            }
-        };
-
-        // GESTÃO DE CLIENTES & MODAL
-        window.abrirModalCliente = () => document.getElementById('modal-cliente').style.display = 'flex';
-        window.fecharModalCliente = () => document.getElementById('modal-cliente').style.display = 'none';
-
-        window.carregarClientesPainel = async function() {
-            const tbody = document.getElementById('tabela-clientes');
-            tbody.innerHTML = '<tr><td colspan="5">A carregar...</td></tr>';
-            try {
-                const snap = await getDocs(collection(db, "clientes"));
-                listaGeralClientes = [];
-                snap.forEach(d => { let c = d.data(); c.id = d.id; listaGeralClientes.push(c); });
-
-                let html = '';
-                listaGeralClientes.forEach((c, index) => {
-                    html += `
-                        <tr>
-                            <td><strong>${c.nome}</strong></td>
-                            <td>${c.cidade || ''} / ${c.uf || ''}</td>
-                            <td>${c.enderecoCompleto || '-'}</td>
-                            <td><span class="status-badge">Ativo</span></td>
-                            <td>
-                                <button class="btn-small" onclick="abrirEditarCliente(${index})">Editar</button>
-                                <button class="btn-delete" onclick="deletarCliente('${c.id}')">Excluir</button>
-                            </td>
-                        </tr>`;
-                });
-                tbody.innerHTML = html || '<tr><td colspan="5">Nenhum cliente registado.</td></tr>';
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="5">Erro ao carregar.</td></tr>'; }
-        };
-
-        document.getElementById('form-cliente-modal').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-salvar-modal-cli');
-            btn.disabled = true; btn.textContent = "A salvar...";
-            try {
-                const id = "cli_" + Date.now();
-                await setDoc(doc(db, "clientes", id), {
-                    nome: document.getElementById('mc-nome').value,
-                    cidade: document.getElementById('mc-cidade').value,
-                    uf: document.getElementById('mc-uf').value.toUpperCase(),
-                    enderecoCompleto: document.getElementById('mc-endereco').value,
-                    status: "Ativo", criadoEm: new Date()
-                });
-                alert("Loja cadastrada com sucesso!");
-                fecharModalCliente();
-                document.getElementById('form-cliente-modal').reset();
-                carregarClientesPainel();
-                carregarDropdownsVisita();
-            } catch(err) { alert("Erro ao salvar loja."); } finally { btn.disabled = false; btn.textContent = "Salvar Loja"; }
-        });
-
-        window.abrirEditarCliente = function(index) {
-            const c = listaGeralClientes[index];
-            document.getElementById('edit-cli-id').value = c.id;
-            document.getElementById('edit-cli-nome').value = c.nome || "";
-            document.getElementById('edit-cli-cidade').value = c.cidade || "";
-            document.getElementById('edit-cli-uf').value = c.uf || "";
-            document.getElementById('edit-cli-endereco').value = c.enderecoCompleto || "";
-            document.getElementById('modal-editar-cliente').style.display = 'flex';
-        };
-
-        window.fecharModalEditarCliente = () => document.getElementById('modal-editar-cliente').style.display = 'none';
-
-        document.getElementById('btn-atualizar-cliente').addEventListener('click', async () => {
-            try {
-                await updateDoc(doc(db, "clientes", document.getElementById('edit-cli-id').value), {
-                    nome: document.getElementById('edit-cli-nome').value,
-                    cidade: document.getElementById('edit-cli-cidade').value,
-                    uf: document.getElementById('edit-cli-uf').value.toUpperCase(),
-                    enderecoCompleto: document.getElementById('edit-cli-endereco').value,
-                    atualizadoEm: new Date()
-                });
-                alert("Cliente atualizado com sucesso!");
-                fecharModalEditarCliente();
-                carregarClientesPainel();
-                carregarDropdownsVisita();
-            } catch(e) { alert("Erro ao atualizar cliente."); }
-        });
-
-        window.deletarCliente = async function(id) {
-            if(confirm("Tem certeza que deseja excluir este cliente?")) {
-                try {
-                    await deleteDoc(doc(db, "clientes", id));
-                    alert("Cliente excluído com sucesso!");
-                    carregarClientesPainel();
-                    carregarDropdownsVisita();
-                } catch(e) { alert("Erro ao excluir cliente."); }
-            }
-        };
-
-        // GESTÃO DE USUÁRIOS & MODAL
-        window.abrirModalUsuario = () => document.getElementById('modal-usuario').style.display = 'flex';
-        window.fecharModalUsuario = () => document.getElementById('modal-usuario').style.display = 'none';
-
-        window.carregarUsuarios = async function() {
-            const tbody = document.getElementById('tabela-usuarios');
-            tbody.innerHTML = '<tr><td colspan="6">A carregar...</td></tr>';
-            listaGeralUsuarios = [];
-            try {
-                const c1 = await getDocs(collection(db, "promotores"));
-                c1.forEach(d => listaGeralUsuarios.push({ ...d.data(), id: d.id, col: "promotores" }));
-                const c2 = await getDocs(collection(db, "assistencia"));
-                c2.forEach(d => listaGeralUsuarios.push({ ...d.data(), id: d.id, col: "assistencia" }));
-                const c3 = await getDocs(collection(db, "administradores"));
-                c3.forEach(d => listaGeralUsuarios.push({ ...d.data(), id: d.id, col: "administradores" }));
-
-                let html = '';
-                listaGeralUsuarios.forEach((u, index) => {
-                    const statusClass = u.ativo ? '' : 'status-pendente';
-                    const statusTxt = u.ativo ? 'Ativo' : 'Bloqueado';
-                    html += `
-                        <tr>
-                            <td><strong>${u.nome}</strong></td>
-                            <td>${u.email}</td>
-                            <td>${u.perfil}</td>
-                            <td>${u.regiao || '-'}</td>
-                            <td><span class="status-badge ${statusClass}">${statusTxt}</span></td>
-                            <td>
-                                <button class="btn-small" onclick="abrirEdicao(${index})">Editar</button>
-                                <button class="btn-delete" onclick="deletarUsuario('${u.col}', '${u.id}')">Excluir</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html || '<tr><td colspan="6">Nenhum membro encontrado.</td></tr>';
-            } catch(e) { tbody.innerHTML = '<tr><td colspan="6">Erro ao carregar.</td></tr>'; }
-        };
-
-        document.getElementById('form-usuario-modal').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('btn-salvar-modal-user');
-            btn.disabled = true; btn.textContent = "A gravar...";
-            const col = document.getElementById('mu-perfil').value;
-            let prefixo = col === 'promotores' ? 'ptv_' : (col === 'assistencia' ? 'ast_' : 'adm_');
-            let label = col === 'promotores' ? 'Promotor Técnico' : (col === 'assistencia' ? 'Assistente Técnico' : 'Administrador');
-
-            try {
-                const id = prefixo + Date.now();
-                await setDoc(doc(db, col, id), {
-                    nome: document.getElementById('mu-nome').value,
-                    email: document.getElementById('mu-email').value,
-                    perfil: label,
-                    regiao: document.getElementById('mu-regiao').value,
-                    telefone: document.getElementById('mu-telefone').value,
-                    ativo: true, criadoEm: new Date()
-                });
-                alert("Membro cadastrado com sucesso!");
-                fecharModalUsuario();
-                document.getElementById('form-usuario-modal').reset();
-                carregarUsuarios();
-            } catch(err) { alert("Erro ao criar membro."); } finally { btn.disabled = false; btn.textContent = "Cadastrar Membro"; }
-        });
-
-        window.abrirEdicao = function(index) {
-            const u = listaGeralUsuarios[index];
-            document.getElementById('edit-id').value = u.id;
-            document.getElementById('edit-colecao').value = u.col;
-            document.getElementById('edit-nome').value = u.nome || "";
-            document.getElementById('edit-telefone').value = u.telefone || "";
-            document.getElementById('edit-regiao').value = u.regiao || "";
-            document.getElementById('edit-ativo').value = u.ativo ? "true" : "false";
-            document.getElementById('modal-editar').style.display = 'flex';
-        };
-
-        window.fecharModalEdit = () => document.getElementById('modal-editar').style.display = 'none';
-
-        document.getElementById('btn-atualizar-user').addEventListener('click', async () => {
-            try {
-                await updateDoc(doc(db, document.getElementById('edit-colecao').value, document.getElementById('edit-id').value), {
-                    nome: document.getElementById('edit-nome').value,
-                    telefone: document.getElementById('edit-telefone').value,
-                    regiao: document.getElementById('edit-regiao').value,
-                    ativo: document.getElementById('edit-ativo').value === "true",
-                    atualizadoEm: new Date()
-                });
-                alert("Atualizado com sucesso!");
-                fecharModalEdit();
-                carregarUsuarios();
-            } catch(e) { alert("Erro ao atualizar."); }
-        });
-
-        window.deletarUsuario = async function(colecao, id) {
-            if(confirm("Deseja realmente excluir este membro do banco de dados?")) {
-                try {
-                    await deleteDoc(doc(db, colecao, id));
-                    alert("Membro excluído com sucesso!");
-                    carregarUsuarios();
-                } catch(e) { alert("Erro ao excluir membro."); }
-            }
-        };
-
-        carregarDropdownsVisita();
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+    <script type="module" src="./dashboard.js?v=2.2.0"></script>
 </body>
 </html>
