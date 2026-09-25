@@ -19,62 +19,15 @@ import {
     where
 } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
-const EMBEDDED_FIREBASE_CONFIG = Object.freeze({
-    apiKey: "AIzaSyAMDeRB1ZOOP919gcbcOoFGAsy6dNy7zS8",
+// Configuração Direta e Segura (Igual ao PWA)
+const firebaseConfig = {
+    apiKey: "AIzaSyAMDeRB1ZOOP919gcbcOoFgAsy6dNy7zS8",
     authDomain: "banco-de-dados-monitor.firebaseapp.com",
     projectId: "banco-de-dados-monitor",
     storageBucket: "banco-de-dados-monitor.firebasestorage.app",
     messagingSenderId: "248039911306",
     appId: "1:248039911306:web:188ffff179b3ffb3ace273"
-});
-
-const FIREBASE_CONFIG_KEYS = Object.freeze(["apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId", "appId", "measurementId", "databaseURL"]);
-
-function isUsableFirebaseConfig(config) {
-    return Boolean(config && typeof config === "object" && String(config.apiKey || "").trim() && String(config.projectId || "").trim());
-}
-
-function parseFirebaseConfigSource(source) {
-    const config = {};
-    for (const key of FIREBASE_CONFIG_KEYS) {
-        const expression = new RegExp(`${key}\\s*:\\s*["']([^"']+)["']`);
-        const match = String(source || "").match(expression);
-        if (match?.[1]) config[key] = match[1].trim();
-    }
-    return isUsableFirebaseConfig(config) ? config : null;
-}
-
-async function fetchWithTimeout(url, options = {}, timeoutMs = 7000) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    try { 
-        return await fetch(url, { ...options, cache: "no-store", signal: controller.signal }); 
-    } finally { 
-        clearTimeout(timer); 
-    }
-}
-
-async function resolveFirebaseConfig() {
-    const candidates = [];
-    if (location.protocol === "https:" || location.protocol === "http:") {
-        candidates.push({ label: "Firebase Hosting", type: "json", url: new URL("/__/firebase/init.json", location.origin).href });
-    }
-    candidates.push({ label: "firebase-config.js do aplicativo", type: "script", url: new URL("../firebase-config.js", import.meta.url).href });
-
-    for (const candidate of candidates) {
-        try {
-            const response = await fetchWithTimeout(candidate.url);
-            if (!response.ok) continue;
-            const config = candidate.type === "json" ? await response.json() : parseFirebaseConfigSource(await response.text());
-            if (isUsableFirebaseConfig(config)) return Object.freeze({ ...config });
-        } catch (error) { 
-            console.warn(`[Dashboard] Não foi possível usar ${candidate.label}:`, error); 
-        }
-    }
-    return EMBEDDED_FIREBASE_CONFIG;
-}
-
-const firebaseConfig = await resolveFirebaseConfig();
+};
 
 const DASHBOARD_CONFIG = Object.freeze({
     locale: "pt-BR",
@@ -84,7 +37,8 @@ const DASHBOARD_CONFIG = Object.freeze({
     autoRefreshMs: 5 * 60 * 1000,
     defaultMapCenter: [-23.0903, -47.2183],
     defaultMapZoom: 7,
-    administratorEmails: ["eric.lima@advancetintas.com.br"],
+    // Bruno e Eric com acessos Master de Gestão
+    administratorEmails: ["eric.lima@advancetintas.com.br", "bruno.souza@advancetintas.com.br"],
     managementTerms: ["admin", "administrador", "diretor", "gerente", "gestor", "coordenador", "supervisor"],
     collections: Object.freeze({
         activities: "atividades",
@@ -317,7 +271,7 @@ function errorMessage(error) {
         "auth/invalid-credential": "E-mail ou senha inválidos.",
         "auth/user-not-found": "Usuário não encontrado.",
         "auth/wrong-password": "E-mail ou senha inválidos.",
-        "permission-denied": "Seu usuário não possui permissão de leitura para estes dados no Firestore."
+        "permission-denied": "Seu usuário não possui permissão de leitura para estes dados."
     };
     return messages[code] || rawMessage || "Não foi possível concluir a operação.";
 }
@@ -974,7 +928,6 @@ function exportCsv() {
     const headers = ["ID", "Data agendada", "Hora agendada", "Profissional", "Cliente", "Cidade", "Tipo", "Status", "Check-in", "Check-out"];
     const rows = state.filteredActivities.map(a => [a.id, formatDate(a.scheduledAt), formatTime(a.scheduledAt), a.professional.name, a.client.name, a.client.city, a.type, a.status, formatDateTime(a.checkinAt), formatDateTime(a.checkoutAt)]);
     
-    // Tratamento de aspas em CSV descompactado para legibilidade
     const content = [headers, ...rows].map(row => {
         return row.map(val => {
             const cell = String(val).replace(/"/g, '""');
