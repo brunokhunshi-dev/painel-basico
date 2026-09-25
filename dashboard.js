@@ -1274,13 +1274,14 @@ function bindEvents() {
             const id = $("mc-id").value || "cli_" + Date.now();
             const cepLimpo = ($("mc-cep")?.value || "").replace(/\D/g, "");
             const endereco = $("mc-endereco")?.value || "";
+            const numero = $("mc-numero")?.value || ""; // Puxa o número se houver um campo separado
             const cidade = $("mc-cidade")?.value || "";
             const uf = ($("mc-uf")?.value || "").toUpperCase();
 
             let latStr = "";
             let lngStr = "";
 
-            // 1. Tenta obter coordenadas pelo CEP via BrasilAPI v2 (retorna location.coordinates)
+            // 1. Tenta obter coordenadas pelo CEP via BrasilAPI v2 (Muitas vezes retorna o centro do CEP)
             if (cepLimpo.length === 8) {
                 try {
                     const resCep = await fetch(`https://brasilapi.com.br/api/cep/v2/${cepLimpo}`);
@@ -1297,9 +1298,12 @@ function bindEvents() {
                 }
             }
 
-            // 2. Se a BrasilAPI não retornar coordenadas do CEP, busca pelo endereço via Nominatim (OpenStreetMap)
+            // 2. Se a BrasilAPI falhar ou quisermos garantir o endereço exato, busca via Nominatim (OpenStreetMap)
+            // OBS: Se você digita rua e número no mesmo campo "mc-endereco", a variável 'numero' ficará vazia e não atrapalhará.
             if (!latStr || !lngStr) {
-                const queryParts = [endereco, cidade, uf, "Brasil"].filter(Boolean).join(", ");
+                const logradouroCompleto = numero ? `${endereco}, ${numero}` : endereco;
+                const queryParts = [logradouroCompleto, cidade, uf, "Brasil"].filter(Boolean).join(", ");
+                
                 if (queryParts) {
                     try {
                         const resGeo = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(queryParts)}`);
@@ -1321,7 +1325,8 @@ function bindEvents() {
                 nome: $("mc-nome").value, 
                 cidade: cidade, 
                 uf: uf,
-                enderecoCompleto: endereco, 
+                // Salva o endereço e o número juntos no banco, se preferir mantê-los concatenados:
+                enderecoCompleto: numero ? `${endereco}, ${numero}` : endereco, 
                 lat: latStr,
                 lng: lngStr,
                 status: "Ativo", 
